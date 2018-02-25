@@ -7,24 +7,23 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_main.*
-import java.net.DatagramPacket
-import java.net.DatagramSocket
-import java.net.InetAddress
-import kotlin.concurrent.thread
+import java.util.concurrent.ConcurrentLinkedQueue
 
 class MainActivity : AppCompatActivity(), SensorEventListener {
 
     private var mSensorManager : SensorManager ?= null
     private var mAccelerometer : Sensor ?= null
+    // ConcurrentLinkedQueue to pass accelerometer sensor information to the UDPClient
+    private var sensorParamQueue : ConcurrentLinkedQueue<String> = ConcurrentLinkedQueue()
 
-
-    override fun onAccuracyChanged(p0: Sensor?, p1: Int) {
-    }
+    override fun onAccuracyChanged(p0: Sensor?, p1: Int) {}
 
     override fun onSensorChanged(p0: SensorEvent?) {
         if (p0 != null) {
-            val values =  "" + p0.values[1] + " " + p0.values[0]
+            val values =  "" + p0.values[0] + "," + p0.values[1] + "," + p0.values[2]
+            sensorParamQueue.add(values)
             sensorTv.text = values
         }
     }
@@ -36,27 +35,15 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         mSensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
         mAccelerometer = mSensorManager!!.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
-        startBtn.setOnClickListener { mSensorManager!!.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_GAME) }
+        sensorParamQueue.add("Game on!")
+
+        startBtn.setOnClickListener { mSensorManager!!.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_UI) }
         stopBtn.setOnClickListener { mSensorManager!!.unregisterListener(this) }
 
-        var server = Thread(UDPServer())
-        server.start()
-
-//        thread(start = true) {
-//            val local : InetAddress = InetAddress.getByName("192.168.1.10")
-//            val msg : String = "Skadoosh"
-//            val msg_len : Int = msg.length
-//            val port : Int = 9156
-//
-//            val socket : DatagramSocket = DatagramSocket(port)
-//
-//            val packet : DatagramPacket = DatagramPacket(msg.toByteArray(), msg_len, local, port)
-//
-//            println ("Sending data packet")
-//            socket.send(packet)
-//        }
-
-
+        connectBtn.setOnClickListener {
+            val client = Thread(UDPClient(sensorParamQueue, ipEditText.text.toString()))
+            client.start()
+            Toast.makeText(applicationContext, "Connected to Server", Toast.LENGTH_SHORT).show()
+        }
     }
-
 }
