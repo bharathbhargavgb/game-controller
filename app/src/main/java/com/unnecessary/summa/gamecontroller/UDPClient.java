@@ -14,10 +14,14 @@ public class UDPClient implements Runnable {
     private int PORT = 9156;
     private InetAddress address;
     private DatagramSocket udpSocket;
+    private volatile boolean isListening;
     ConcurrentLinkedQueue<String> sensorParamQueue;
 
-    UDPClient(ConcurrentLinkedQueue<String> sensorParamQueue, String IP) {
+    UDPClient() {
+        isListening = false;
+    }
 
+    public void setValues (ConcurrentLinkedQueue<String> sensorParamQueue, String IP) {
         this.sensorParamQueue = sensorParamQueue;
 
         try {
@@ -32,14 +36,14 @@ public class UDPClient implements Runnable {
 
 
     @Override
-    public void run() {
+    public synchronized void run () {
+        isListening = true;
         try {
-            while (true) {
+            while (isListening) {
                 String message = "";
                 if ((message = sensorParamQueue.poll()) != null) {
                     DatagramPacket packet = new DatagramPacket(message.getBytes(), message.length(), address, PORT);
                     udpSocket.send(packet);
-                    //System.out.println(address + ":" + PORT + " => " + message);
                 }
             }
         } catch (SocketException e) {
@@ -49,5 +53,10 @@ public class UDPClient implements Runnable {
         } catch (IOException e) {
             Log.e("Udp Send:", "IO Error:", e);
         }
+    }
+
+    public void stopListening() {
+        isListening = false;
+        udpSocket.close();
     }
 }

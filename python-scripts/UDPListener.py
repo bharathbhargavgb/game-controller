@@ -1,5 +1,5 @@
 import socket
-from SensorFlow import * 
+from SensorFlow import *
 
 SEPARATOR = ','
 RECV_BYTES = 1024
@@ -19,13 +19,13 @@ class UDPListener:
 		print ("Listening...")
 		while True:
 			data, address = self.sock.recvfrom(RECV_BYTES)
-			
+
 			if data.find(SEPARATOR) != -1:
 				sensor_axes = data.split(SEPARATOR)
 				print (sensor_axes)
-				self. ballFlow.updatePosition(sensor_axes)
+				self.ballFlow.updatePosition(sensor_axes)
 			else:
 				print (data)
 
-listener = UDPListener("192.168.1.6", 9156)
-listener.listen()		
+listener = UDPListener("192.168.1.3", 9156)
+listener.listen()
